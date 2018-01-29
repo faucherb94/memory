@@ -41,6 +41,7 @@ class MemoryGame extends React.Component {
         score: newScore,
         lastGuess: newLastGuess,
         tiles: newTiles,
+        hold: false,
       });
       
     } else if (this.state.tiles[tid].letter == this.state.tiles[lastGuess].letter) {
@@ -62,7 +63,10 @@ class MemoryGame extends React.Component {
       this.setState({
         score: newScore,
         tiles: newTiles,
+        hold: true,
       });
+      
+      this.render();
       
       // reset display of tiles on next render
       setTimeout(() => {
@@ -76,29 +80,40 @@ class MemoryGame extends React.Component {
         this.setState({
           lastGuess: newLastGuess,
           tiles: newTiles,
+          hold: false,
         });
       }, 1500); 
     }
   }
   
-  holdUI() {
-    
-  }
-  
   resetBoard() {
-    
+    this.setState({
+      score: 0,
+      lastGuess: -1,
+      tiles: getNewTiles(),
+    });
   }
   
   renderTile(i) {
-    return (
-      <Tile tid={i} letter={this.state.tiles[i].letter} status={this.state.tiles[i].status} onClick={() => this.tileOnClick(i)}/>
-    );
+    if (this.state.hold) {
+      return (
+        <Tile tid={i} letter={this.state.tiles[i].letter} status={this.state.tiles[i].status} />
+      );
+    } else {
+      return (
+        <Tile tid={i} letter={this.state.tiles[i].letter} status={this.state.tiles[i].status} onClick={() => this.tileOnClick(i)}/>
+      );
+    }
   }
 
   // Render function
   render() {
     return (
       <div className="container">
+        <div className="row">
+          <div className="col"><h3>{"Score: " + this.state.score}</h3></div>
+          <div className="col"><button type="button" className="btn btn-outline-primary" onClick={() => this.resetBoard()}>Restart</button></div>
+        </div>
         <div className="row">
           <div className="col">{this.renderTile(0)}</div>
           <div className="col">{this.renderTile(1)}</div>
@@ -132,16 +147,21 @@ class MemoryGame extends React.Component {
 // form elements
 function Tile(params) {
   let status = params.status;
-  if (status != "unmatched") {
-    //console.log("Rendering tile " + params.tid + " with letter " + params.letter);
+  if (status == "selected") {
     return (
-      <div className="border border-primary tile text-center align-middle">
+      <div className="border border-primary tile text-center align-middle alert alert-primary">
+        <p>{ params.letter }</p>
+      </div>
+    );
+  } else if (status == "matched") {
+    return (
+      <div className="border border-primary tile text-center align-middle alert alert-secondary">
         <p>{ params.letter }</p>
       </div>
     );
   } else {
     return (
-       <div className="border border-primary tile text-center align-middle" onClick={params.onClick}>
+       <div className="border border-primary tile text-center align-middle alert alert-primary" onClick={ params.onClick }>
         <p></p>
       </div>
     );
