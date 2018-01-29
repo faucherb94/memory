@@ -13,7 +13,7 @@ class MemoryGame extends React.Component {
     // fill in initial state
     this.state = {
       score: 0,
-      currentGuess: -1,
+      lastGuess: -1,
       tiles: getNewTiles(),
     };
   }
@@ -24,47 +24,61 @@ class MemoryGame extends React.Component {
   
   // Game Functions
   tileOnClick(tid) {
-    
-    /*
-      increment score
-      
-      another tile has been picked?
-        letters match?
-          mark letter as matched in matchStatus
-        else:
-          hold UI for a sec, then clear showStatus and currentGuess
-      first tile picked?
-        mark selected
-        
-      update state
-    */    
-    
     let newTiles = this.state.tiles.slice();
     let newScore = this.state.score + 1;
-    let newCurrentGuess = -1;
+    let lastGuess = this.state.lastGuess;
+    let newLastGuess = -1;  // reset by default
     
-    if(this.state.currentGuess == -1) {
+    console.log("OnClick called. Last guess: " + lastGuess);
+    
+    if(lastGuess == -1) {
       // first move
-      newTiles[tid].status = "selected"
-      newCurrentGuess = tid;
+      newTiles[tid].status = "selected";
+      newLastGuess = tid;
       console.log("Selected " + tid);
-      // tile will show on state change
-    } else if (this.state.currentGuess = tid) {
+      
+      this.setState({
+        score: newScore,
+        lastGuess: newLastGuess,
+        tiles: newTiles,
+      });
+      
+    } else if (this.state.tiles[tid].letter == this.state.tiles[lastGuess].letter) {
       // match found
       newTiles[tid].status = "matched";
-      newTiles[this.state.currentGuess].status = "matched";
+      newTiles[lastGuess].status = "matched";
       console.log("Found match");
-      // both tiles will show on state change
+      
+      this.setState({
+        score: newScore,
+        lastGuess: newLastGuess,
+        tiles: newTiles,
+      });
+      
     } else {
-      // match not found
-      console.log("Match not found"); 
+      console.log("Match not found");
+      newTiles[tid].status = "selected";
+      // change state then pause
+      this.setState({
+        score: newScore,
+        tiles: newTiles,
+      });
+      
+      // reset display of tiles on next render
+      setTimeout(() => {
+        newTiles.forEach(function(tile) {
+          if (tile.status == "selected")
+            tile.status = "unmatched";
+        });
+        
+        newLastGuess = -1;
+        console.log("Re-rendering...");
+        this.setState({
+          lastGuess: newLastGuess,
+          tiles: newTiles,
+        });
+      }, 1500); 
     }
-    
-    this.setState({
-      score: newScore,
-      currentGuess: newCurrentGuess,
-      tiles: newTiles,
-    })
   }
   
   holdUI() {
@@ -118,8 +132,8 @@ class MemoryGame extends React.Component {
 // form elements
 function Tile(params) {
   let status = params.status;
-  if (status == "selected" || status == "matched") {
-    // note: not binding click function if tile is shown
+  if (status != "unmatched") {
+    //console.log("Rendering tile " + params.tid + " with letter " + params.letter);
     return (
       <div className="border border-primary tile text-center align-middle">
         <p>{ params.letter }</p>
@@ -135,15 +149,7 @@ function Tile(params) {
 }
 
 function getNewTiles() {
-  var protoarr = new Array(16);
-  protoarr.fill({letter: "A", status: "unmatched"}, 0, 2);
-  protoarr.fill({letter: "B", status: "unmatched"}, 2, 4);
-  protoarr.fill({letter: "C", status: "unmatched"}, 4, 6);
-  protoarr.fill({letter: "D", status: "unmatched"}, 6, 8);
-  protoarr.fill({letter: "E", status: "unmatched"}, 8, 10);
-  protoarr.fill({letter: "F", status: "unmatched"}, 10, 12);
-  protoarr.fill({letter: "G", status: "unmatched"}, 12, 14);
-  protoarr.fill({letter: "H", status: "unmatched"}, 14, 16);
-  
-  return protoarr;
+  var letters = _.shuffle('AABBCCDDEEFFGGHH');
+  var tiles = _.map(letters, function(letter) { return {letter: letter, status: "unmatched"}; });
+  return tiles;
 }
